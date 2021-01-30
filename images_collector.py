@@ -81,41 +81,48 @@ def download_images(main_keyword, supplemented_keywords, download_dir):
     img_dir =  download_dir + main_keyword + '/'
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
-
+    img_urls = []
     for j in range(len(supplemented_keywords)):
         print('Process {0} supplemented keyword: {1}'.format(os.getpid(), supplemented_keywords[j]))
         search_query = quote(main_keyword + ' ' + supplemented_keywords[j])
         url = 'https://www.google.com/search?q=' + search_query + '&source=lnms&tbm=isch'
         image_links = image_links.union(parse_page(url))
         print('Process {0} get {1} links so far'.format(os.getpid(), len(image_links)))
-        print(image_links)
+        img_urls.append(image_links)
         time.sleep(1)
     print ("Process {0} get totally {1} links".format(os.getpid(), len(image_links)))
     
-    print ("........................................................................")
-    print ("...Start downloading....................................................")
-    count = 1
-    for link in image_links:
-        try:
-            req = urllib.request.Request(link, headers = {"User-Agent": generate_user_agent()})
-            response = urllib.request.urlopen(req)
-            data = response.read()
-            file_path = img_dir + '{0}.jpg'.format(count)
-            with open(file_path,'wb') as wf:
-                wf.write(data)
-            print('Process {0} fininsh image {1}/{2}.jpg'.format(os.getpid(), main_keyword, count))
-            count += 1
-        except urllib.error.URLError as e:
-            logging.error('URLError while downloading image {0}\nreason:{1}'.format(link, e.reason))
-            continue
-        except urllib.error.HTTPError as e:
-            logging.error('HTTPError while downloading image {0}\nhttp code {1}, reason:{2}'.format(link, e.code, e.reason))
-            continue
-        except Exception as e:
-            logging.error('Unexpeted error while downloading image {0}\nerror type:{1}, args:{2}'.format(link, type(e), e.args))
-            continue
+    with open(img_links_saved_file, 'w') as wf:
+        for url in img_urls:
+            wf.write(url +'\n')
+    print('Store all the links in file {0}'.format(img_lins_saved_file))
 
-    print("Finish downloading, total {0} errors".format(len(image_links) - count))
+
+    def download_images_file(img_links_saved_file):
+        print ("........................................................................")
+        print ("...Start downloading....................................................")
+        count = 1
+        for link in image_links:
+            try:
+                req = urllib.request.Request(link, headers = {"User-Agent": generate_user_agent()})
+                response = urllib.request.urlopen(req)
+                data = response.read()
+                file_path = img_dir + '{0}.jpg'.format(count)
+                with open(file_path,'wb') as wf:
+                    wf.write(data)
+                print('Process {0} fininsh image {1}/{2}.jpg'.format(os.getpid(), main_keyword, count))
+                count += 1
+            except urllib.error.URLError as e:
+                logging.error('URLError while downloading image {0}\nreason:{1}'.format(link, e.reason))
+                continue
+            except urllib.error.HTTPError as e:
+                logging.error('HTTPError while downloading image {0}\nhttp code {1}, reason:{2}'.format(link, e.code, e.reason))
+                continue
+            except Exception as e:
+                logging.error('Unexpeted error while downloading image {0}\nerror type:{1}, args:{2}'.format(link, type(e), e.args))
+                continue
+
+        print("Finish downloading, total {0} errors".format(len(image_links) - count))
     
 
 
